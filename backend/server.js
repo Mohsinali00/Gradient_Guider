@@ -7,6 +7,7 @@ import adminRoutes from './routes/admin.routes.js';
 import employeesRoutes from './routes/employees.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import leaveRoutes from './routes/leave.routes.js';
 
 dotenv.config();
 
@@ -85,6 +86,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/employees', employeesRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/leave', leaveRoutes);
 
 
 app.get('/api/health', (req, res) => {

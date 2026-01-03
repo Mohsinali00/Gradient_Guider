@@ -1,7 +1,9 @@
 import express from 'express';
 import Attendance from '../models/Attendance.model.js';
 import Leave from '../models/Leave.model.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import User from '../models/User.model.js';
+import Salary from '../models/Salary.model.js';
+import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -114,8 +116,25 @@ router.post('/check-out', async (req, res) => {
       });
     }
 
-    // Update check-out time
+    // Update check-out time and calculate work hours
     attendance.checkOutTime = new Date();
+    
+    // Calculate work hours (excluding break time)
+    const checkInTime = new Date(attendance.checkInTime);
+    const checkOutTime = new Date();
+    const totalHours = (checkOutTime - checkInTime) / (1000 * 60 * 60); // Convert to hours
+    
+    // Get employee's salary info for break time
+    const salary = await Salary.findOne({ employeeId });
+    const breakTimeHours = salary?.breakTimeHours || 1; // Default 1 hour break
+    const standardWorkHours = 8; // Standard 8 hours work day
+    
+    // Calculate work hours (total - break)
+    attendance.workHours = Math.max(0, totalHours - breakTimeHours);
+    
+    // Calculate extra hours (work hours beyond standard 8 hours)
+    attendance.extraHours = Math.max(0, attendance.workHours - standardWorkHours);
+    
     await attendance.save();
 
     res.json({
@@ -178,6 +197,207 @@ router.get('/today', async (req, res) => {
     });
   }
 });
+
+/**
+ * GET /api/attendance/employee/:month
+ * Get employee's monthly attendance (for employees viewing their own attendance)
+ * month format: YYYY-MM
+ */
+router.get('/employee/:month', async (req, res) => {
+  try {
+    const { month } = req.params; // YYYY-MM format
+    const employeeId = req.user.userId;
+    
+    // Get start and end dates of the month
+    const [year, monthNum] = month.split('-').map(Number);
+    const startDate = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, monthNum, 0).getDate();
+    const endDate = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    
+    // Get all attendance records for the month
+    const attendanceRecords = await Attendance.find({
+      employeeId,
+      date: { $gte: startDate, $lte: endDate }
+    }).sort({ date: 1 });
+    
+    // Get approved leaves for the month
+    const leaves = await Leave.find({
+      employeeId,
+      status: 'approved',
+      $or: [
+        { startDate: { $gte: startDate, $lte: endDate } },
+        { endDate: { $gte: startDate, $lte: endDate } },
+        { startDate: { $lte: startDate }, endDate: { $gte: endDate } }
+      ]
+    });
+    
+    // Get salary info for break time
+    const salary = await Salary.findOne({ employeeId });
+    const breakTimeHours = salary?.breakTimeHours || 1;
+    
+    // Format attendance data
+    const formattedRecords = attendanceRecords.map(record => {
+      const checkIn = record.checkInTime ? new Date(record.checkInTime) : null;
+      const checkOut = record.checkOutTime ? new Date(record.checkOutTime) : null;
+      
+      return {
+        date: record.date,
+        checkIn: checkIn ? checkIn.toTimeString().slice(0, 5) : null,
+        checkOut: checkOut ? checkOut.toTimeString().slice(0, 5) : null,
+        workHours: formatHours(record.workHours || 0),
+        extraHours: formatHours(record.extraHours || 0),
+        status: record.status
+      };
+    });
+    
+    // Calculate summary statistics
+    const presentDays = attendanceRecords.filter(r => r.status === 'present').length;
+    const leaveDays = leaves.reduce((total, leave) => {
+      const leaveStart = new Date(leave.startDate);
+      const leaveEnd = new Date(leave.endDate);
+      const monthStart = new Date(startDate);
+      const monthEnd = new Date(endDate);
+      
+      const actualStart = leaveStart < monthStart ? monthStart : leaveStart;
+      const actualEnd = leaveEnd > monthEnd ? monthEnd : leaveEnd;
+      
+      if (actualStart <= actualEnd) {
+        const days = Math.ceil((actualEnd - actualStart) / (1000 * 60 * 60 * 24)) + 1;
+        return total + days;
+      }
+      return total;
+    }, 0);
+    
+    const totalWorkingDays = new Date(year, monthNum, 0).getDate(); // Total days in month
+    
+    res.json({
+      success: true,
+      data: {
+        month,
+        date: `${new Date().getDate()},${new Date(year, monthNum - 1).toLocaleString('default', { month: 'long' })} ${year}`,
+        attendance: formattedRecords,
+        summary: {
+          presentDays,
+          leaveDays,
+          totalWorkingDays
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get employee attendance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * GET /api/attendance/admin/:date
+ * Get all employees' attendance for a specific date (Admin only)
+ * date format: YYYY-MM-DD
+ */
+router.get('/admin/:date', authorize('admin'), async (req, res) => {
+  try {
+    const { date } = req.params; // YYYY-MM-DD format
+    const searchQuery = req.query.search || '';
+    
+    // Build employee filter
+    const employeeFilter = {};
+    if (searchQuery) {
+      employeeFilter.$or = [
+        { firstName: { $regex: searchQuery, $options: 'i' } },
+        { lastName: { $regex: searchQuery, $options: 'i' } },
+        { email: { $regex: searchQuery, $options: 'i' } },
+        { loginId: { $regex: searchQuery, $options: 'i' } }
+      ];
+    }
+    
+    // Get all employees
+    const employees = await User.find({
+      role: 'employee',
+      isActive: true,
+      ...employeeFilter
+    }).select('firstName lastName email loginId avatar department designation');
+    
+    // Get attendance records for the date
+    const attendanceRecords = await Attendance.find({
+      date,
+      employeeId: { $in: employees.map(e => e._id) }
+    });
+    
+    // Get leaves for the date
+    const leaves = await Leave.find({
+      status: 'approved',
+      startDate: { $lte: date },
+      endDate: { $gte: date },
+      employeeId: { $in: employees.map(e => e._id) }
+    });
+    
+    // Create a map of employee attendance
+    const attendanceMap = {};
+    attendanceRecords.forEach(record => {
+      attendanceMap[record.employeeId.toString()] = record;
+    });
+    
+    const leaveMap = {};
+    leaves.forEach(leave => {
+      leaveMap[leave.employeeId.toString()] = leave;
+    });
+    
+    // Format response
+    const formattedData = employees.map(employee => {
+      const attendance = attendanceMap[employee._id.toString()];
+      const onLeave = !!leaveMap[employee._id.toString()];
+      
+      const checkIn = attendance?.checkInTime ? new Date(attendance.checkInTime) : null;
+      const checkOut = attendance?.checkOutTime ? new Date(attendance.checkOutTime) : null;
+      
+      return {
+        employee: {
+          id: employee._id,
+          name: `${employee.firstName} ${employee.lastName}`,
+          email: employee.email,
+          loginId: employee.loginId,
+          avatar: employee.avatar,
+          department: employee.department,
+          designation: employee.designation
+        },
+        checkIn: checkIn ? checkIn.toTimeString().slice(0, 5) : null,
+        checkOut: checkOut ? checkOut.toTimeString().slice(0, 5) : null,
+        workHours: attendance ? formatHours(attendance.workHours || 0) : null,
+        extraHours: attendance ? formatHours(attendance.extraHours || 0) : null,
+        status: onLeave ? 'on_leave' : (attendance?.status || 'absent')
+      };
+    });
+    
+    // Format date for display
+    const dateObj = new Date(date);
+    const formattedDate = `${dateObj.getDate()},${dateObj.toLocaleString('default', { month: 'long' })} ${dateObj.getFullYear()}`;
+    
+    res.json({
+      success: true,
+      data: {
+        date,
+        formattedDate,
+        attendance: formattedData
+      }
+    });
+  } catch (error) {
+    console.error('Get admin attendance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Helper function to format hours
+function formatHours(hours) {
+  const h = Math.floor(hours);
+  const m = Math.floor((hours - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
 
 export default router;
 

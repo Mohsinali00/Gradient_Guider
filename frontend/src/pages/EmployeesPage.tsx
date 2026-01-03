@@ -97,18 +97,24 @@ export default function EmployeesPage() {
               <h1 className="text-xl font-bold text-primary">DayFlow HRMS</h1>
               <div className="flex items-center space-x-4">
                 <div className="flex space-x-4">
-                  <button 
-                    onClick={() => navigate('/employees')}
-                    className="text-primary font-medium border-b-2 border-primary pb-1"
-                  >
-                    Employees
-                  </button>
-                  <button className="text-gray-600 hover:text-primary transition-colors">
-                    Attendance
-                  </button>
-                  <button className="text-gray-600 hover:text-primary transition-colors">
-                    Time Off
-                  </button>
+                      <button
+                        onClick={() => navigate('/employees')}
+                        className="text-primary font-medium border-b-2 border-primary pb-1"
+                      >
+                        Employees
+                      </button>
+                      <button
+                        onClick={() => navigate('/attendance')}
+                        className="text-gray-600 hover:text-primary transition-colors"
+                      >
+                        Attendance
+                      </button>
+                      <button
+                        onClick={() => navigate('/time-off')}
+                        className="text-gray-600 hover:text-primary transition-colors"
+                      >
+                        Time Off
+                      </button>
                   {user?.role === 'admin' && (
                     <button
                       onClick={() => navigate('/welcome')}
