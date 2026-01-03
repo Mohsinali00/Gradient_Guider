@@ -49,7 +49,7 @@ export default function WelcomePage() {
   });
 
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'super_admin') {
       fetchEmployees();
     }
   }, [user]);
@@ -91,7 +91,7 @@ export default function WelcomePage() {
     }
   };
 
-  if (user?.role !== 'admin') {
+  if (user?.role !== 'admin' && user?.role !== 'super_admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
@@ -112,7 +112,16 @@ export default function WelcomePage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-primary">DayFlow HRMS</h1>
+            <div className="flex items-center gap-3">
+              {company?.logo && (
+                <img
+                  src={company.logo}
+                  alt={company.name}
+                  className="w-12 h-12 rounded-lg object-cover border-2 border-primary/30 shadow-md"
+                />
+              )}
+              <h1 className="text-3xl font-bold text-primary">DayFlow HRMS</h1>
+            </div>
             <p className="text-muted-foreground">
               Welcome, {user?.firstName} {user?.lastName} • {company?.name}
             </p>

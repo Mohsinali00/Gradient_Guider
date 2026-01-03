@@ -4,12 +4,20 @@ const UserSchema = new mongoose.Schema({
   companyId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Company',
-    required: true
+    required: function() {
+      // companyId is required for admin and employee, but optional for super_admin during creation
+      return this.role !== 'super_admin';
+    }
   },
   role: {
     type: String,
-    enum: ['admin', 'employee'],
+    enum: ['super_admin', 'admin', 'employee'],
     required: true
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null // null for super_admin (company owner)
   },
   loginId: { 
     type: String, 

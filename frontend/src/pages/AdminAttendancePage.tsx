@@ -6,6 +6,8 @@ import { Card, CardContent } from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import ProfileDropdown from '../components/ProfileDropdown';
+import Loader from '../components/Loader';
+import ScrollAnimate from '../components/ScrollAnimate';
 
 interface EmployeeAttendance {
   employee: {
@@ -26,7 +28,7 @@ interface EmployeeAttendance {
 
 export default function AdminAttendancePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, company, logout } = useAuth();
   const [attendance, setAttendance] = useState<EmployeeAttendance[]>([]);
   const [currentDate, setCurrentDate] = useState<string>('');
   const [displayDate, setDisplayDate] = useState<string>('');
@@ -88,43 +90,52 @@ export default function AdminAttendancePage() {
   );
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Loading attendance...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div className="min-h-screen relative">
+      {/* Animated background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5 -z-10"></div>
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.08),transparent_50%)] -z-10"></div>
+      
+      <nav className="glass-effect border-b border-border/50 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-primary">DayFlow HRMS</h1>
-              <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4">
+            <div className="flex items-center space-x-6 w-full sm:w-auto">
+              <div className="flex items-center gap-3">
+                {company?.logo && (
+                  <img
+                    src={company.logo}
+                    alt={company.name}
+                    className="w-10 h-10 rounded-lg object-cover border-2 border-primary/30 shadow-md"
+                  />
+                )}
+                <h1 className="text-2xl font-heading font-bold text-gradient">DayFlow HRMS</h1>
+              </div>
+              <div className="flex items-center space-x-1 sm:space-x-3 flex-wrap gap-2">
                 <button
                   onClick={() => navigate('/employees')}
-                  className="text-gray-600 hover:text-primary transition-colors"
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 text-muted-foreground hover:text-primary hover:bg-primary/5"
                 >
                   Employees
                 </button>
                 <button
                   onClick={() => navigate('/attendance')}
-                  className="text-primary font-medium border-b-2 border-primary pb-1"
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 bg-primary/10 text-primary border-b-2 border-primary"
                 >
                   Attendance
                 </button>
                 <button
                   onClick={() => navigate('/time-off')}
-                  className="text-gray-600 hover:text-primary transition-colors"
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 text-muted-foreground hover:text-primary hover:bg-primary/5"
                 >
                   Time Off
                 </button>
                 {user?.role === 'admin' && (
                   <button
                     onClick={() => navigate('/welcome')}
-                    className="text-gray-600 hover:text-primary transition-colors"
+                    className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 text-muted-foreground hover:text-primary hover:bg-primary/5"
                   >
                     Manage Employees
                   </button>
@@ -134,12 +145,12 @@ export default function AdminAttendancePage() {
             <div className="relative">
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center space-x-2 focus:outline-none"
+                className="flex items-center space-x-2 focus:outline-none rounded-full hover:ring-2 ring-primary/20 transition-all duration-200 p-1"
               >
                 <img
                   src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.firstName || '') + ' ' + (user?.lastName || ''))}&background=random`}
                   alt="Profile"
-                  className="w-8 h-8 rounded-full border-2 border-gray-300"
+                  className="w-9 h-9 rounded-full border-2 border-primary/30 shadow-md hover:shadow-lg transition-all duration-200"
                 />
               </button>
               {showProfileDropdown && (
@@ -154,18 +165,20 @@ export default function AdminAttendancePage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">Attendances List view</h2>
-          <p className="text-sm text-gray-600 mb-4">For Admin/HR Officer</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-6 animate-slide-up">
+          <h2 className="text-3xl font-heading font-bold mb-2 text-gradient">Attendances List view</h2>
+          <p className="text-sm text-muted-foreground">For Admin/HR Officer</p>
           
           {/* Date Navigation and Search */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center gap-2">
+          <ScrollAnimate animation="slide-right" delay={100}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
+            <div className="flex items-center gap-3">
               <Button
                 onClick={() => handleDateChange('prev')}
                 variant="outline"
                 size="sm"
+                className="hover:scale-105"
               >
                 ←
               </Button>
@@ -173,12 +186,13 @@ export default function AdminAttendancePage() {
                 type="date"
                 value={currentDate}
                 onChange={handleDateSelect}
-                className="px-3 py-2 border rounded-md"
+                className="px-4 py-2.5 border-2 border-input rounded-lg bg-white/80 backdrop-blur-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 font-sans"
               />
               <Button
                 onClick={() => handleDateChange('next')}
                 variant="outline"
                 size="sm"
+                className="hover:scale-105"
               >
                 →
               </Button>
@@ -193,76 +207,86 @@ export default function AdminAttendancePage() {
               />
             </div>
           </div>
+          </ScrollAnimate>
 
           {/* Current Date Display */}
-          <div className="mb-4 text-center">
-            <p className="text-lg font-semibold">{displayDate}</p>
-          </div>
+          <ScrollAnimate animation="fade-in" delay={200}>
+            <div className="mb-6 text-center">
+              <p className="text-xl font-heading font-semibold text-foreground">{displayDate}</p>
+            </div>
+          </ScrollAnimate>
         </div>
 
         {/* Attendance Table */}
-        <Card>
+        <ScrollAnimate animation="fade-in" delay={300}>
+          <Card>
           <CardContent className="pt-6">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-semibold">Emp</th>
-                    <th className="text-left py-3 px-4 font-semibold">Check In</th>
-                    <th className="text-left py-3 px-4 font-semibold">Check Out</th>
-                    <th className="text-left py-3 px-4 font-semibold">Work Hours</th>
-                    <th className="text-left py-3 px-4 font-semibold">Extra hours</th>
+                  <tr className="border-b-2 border-border">
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Emp</th>
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Check In</th>
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Check Out</th>
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Work Hours</th>
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Extra hours</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAttendance.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center py-8 text-gray-500">
+                      <td colSpan={5} className="text-center py-12 text-muted-foreground">
                         No attendance records found for this date
                       </td>
                     </tr>
                   ) : (
                     filteredAttendance.map((item, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
+                      <tr 
+                        key={index} 
+                        className="border-b border-border/50 hover:bg-primary/5 transition-colors duration-200"
+                        style={{ animationDelay: `${index * 0.03}s` }}
+                      >
+                        <td className="py-4 px-4 sm:px-6">
+                          <div className="flex items-center gap-3">
                             <img
                               src={item.employee.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.employee.name)}&background=random`}
                               alt={item.employee.name}
-                              className="w-8 h-8 rounded-full"
+                              className="w-10 h-10 rounded-full border-2 border-primary/20 shadow-sm"
                             />
                             <div>
-                              <div className="font-medium">{item.employee.name}</div>
-                              <div className="text-sm text-gray-500">{item.employee.department || 'N/A'}</div>
+                              <div className="font-heading font-semibold">{item.employee.name}</div>
+                              {item.employee.department?.trim() && (
+                                <div className="text-xs text-muted-foreground">{item.employee.department.trim()}</div>
+                              )}
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-4 sm:px-6">
                           {item.status === 'on_leave' ? (
-                            <span className="text-orange-600 font-medium">On Leave</span>
+                            <span className="text-accent font-medium">On Leave</span>
                           ) : (
-                            item.checkIn || '-'
+                            <span className="font-mono text-sm">{item.checkIn || '-'}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-4 sm:px-6">
                           {item.status === 'on_leave' ? (
-                            <span className="text-orange-600 font-medium">On Leave</span>
+                            <span className="text-accent font-medium">On Leave</span>
                           ) : (
-                            item.checkOut || '-'
+                            <span className="font-mono text-sm">{item.checkOut || '-'}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-4 sm:px-6">
                           {item.status === 'on_leave' ? (
-                            <span className="text-orange-600 font-medium">-</span>
+                            <span className="text-accent font-medium">-</span>
                           ) : (
-                            item.workHours || '00:00'
+                            <span className="font-mono text-sm font-semibold text-primary">{item.workHours || '00:00'}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-4 sm:px-6">
                           {item.status === 'on_leave' ? (
-                            <span className="text-orange-600 font-medium">-</span>
+                            <span className="text-accent font-medium">-</span>
                           ) : (
-                            item.extraHours || '00:00'
+                            <span className="font-mono text-sm font-semibold text-accent">{item.extraHours || '00:00'}</span>
                           )}
                         </td>
                       </tr>
@@ -272,7 +296,8 @@ export default function AdminAttendancePage() {
               </table>
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </ScrollAnimate>
       </div>
     </div>
   );

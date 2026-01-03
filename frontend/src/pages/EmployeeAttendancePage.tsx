@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import Input from '../components/ui/Input';
+import { Card, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import ProfileDropdown from '../components/ProfileDropdown';
+import Loader from '../components/Loader';
+import ScrollAnimate from '../components/ScrollAnimate';
 
 interface AttendanceRecord {
   date: string;
@@ -24,7 +25,7 @@ interface AttendanceSummary {
 
 export default function EmployeeAttendancePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, company, logout } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [summary, setSummary] = useState<AttendanceSummary>({ presentDays: 0, leaveDays: 0, totalWorkingDays: 0 });
   const [currentMonth, setCurrentMonth] = useState<string>('');
@@ -83,42 +84,46 @@ export default function EmployeeAttendancePage() {
     }
   };
 
-  const getMonthName = (month: string) => {
-    const [year, monthNum] = month.split('-').map(Number);
-    return new Date(year, monthNum - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Loading attendance...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div className="min-h-screen relative">
+      {/* Animated background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5 -z-10"></div>
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.08),transparent_50%)] -z-10"></div>
+      
+      <nav className="glass-effect border-b border-border/50 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-primary">DayFlow HRMS</h1>
-              <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4">
+            <div className="flex items-center space-x-6 w-full sm:w-auto">
+              <div className="flex items-center gap-3">
+                {company?.logo && (
+                  <img
+                    src={company.logo}
+                    alt={company.name}
+                    className="w-10 h-10 rounded-lg object-cover border-2 border-primary/30 shadow-md"
+                  />
+                )}
+                <h1 className="text-2xl font-heading font-bold text-gradient">DayFlow HRMS</h1>
+              </div>
+              <div className="flex items-center space-x-1 sm:space-x-3 flex-wrap gap-2">
                 <button
                   onClick={() => navigate('/employees')}
-                  className="text-gray-600 hover:text-primary transition-colors"
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 text-muted-foreground hover:text-primary hover:bg-primary/5"
                 >
                   Employees
                 </button>
                 <button
                   onClick={() => navigate('/attendance')}
-                  className="text-primary font-medium border-b-2 border-primary pb-1"
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 bg-primary/10 text-primary border-b-2 border-primary"
                 >
                   Attendance
                 </button>
                 <button
                   onClick={() => navigate('/time-off')}
-                  className="text-gray-600 hover:text-primary transition-colors"
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 text-muted-foreground hover:text-primary hover:bg-primary/5"
                 >
                   Time Off
                 </button>
@@ -127,12 +132,12 @@ export default function EmployeeAttendancePage() {
             <div className="relative">
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center space-x-2 focus:outline-none"
+                className="flex items-center space-x-2 focus:outline-none rounded-full hover:ring-2 ring-primary/20 transition-all duration-200 p-1"
               >
                 <img
                   src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.firstName || '') + ' ' + (user?.lastName || ''))}&background=random`}
                   alt="Profile"
-                  className="w-8 h-8 rounded-full border-2 border-gray-300"
+                  className="w-9 h-9 rounded-full border-2 border-primary/30 shadow-md hover:shadow-lg transition-all duration-200"
                 />
               </button>
               {showProfileDropdown && (
@@ -147,17 +152,19 @@ export default function EmployeeAttendancePage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">Attendance</h2>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-6 animate-slide-up">
+          <h2 className="text-3xl font-heading font-bold mb-2 text-gradient">Attendance</h2>
           
           {/* Month Navigation and Summary */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          <ScrollAnimate animation="slide-right" delay={100}>
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
               <Button
                 onClick={() => handleMonthChange('prev')}
                 variant="outline"
                 size="sm"
+                className="hover:scale-105"
               >
                 ←
               </Button>
@@ -165,81 +172,90 @@ export default function EmployeeAttendancePage() {
                 type="month"
                 value={currentMonth}
                 onChange={handleMonthSelect}
-                className="px-3 py-2 border rounded-md"
+                className="px-4 py-2.5 border-2 border-input rounded-lg bg-white/80 backdrop-blur-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 font-sans"
               />
               <Button
                 onClick={() => handleMonthChange('next')}
                 variant="outline"
                 size="sm"
+                className="hover:scale-105"
               >
                 →
               </Button>
             </div>
             
             {/* Summary Statistics */}
-            <div className="flex gap-4">
-              <Card className="px-4 py-2">
+            <div className="flex flex-wrap gap-3 sm:gap-4 w-full lg:w-auto">
+              <Card className="px-5 py-4 flex-1 sm:flex-none min-w-[140px] hover:scale-105 transition-transform duration-200">
                 <CardContent className="p-0">
-                  <div className="text-sm text-gray-600">Count of days present</div>
-                  <div className="text-xl font-bold">{summary.presentDays}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Count of days present</div>
+                  <div className="text-2xl font-heading font-bold text-primary">{summary.presentDays}</div>
                 </CardContent>
               </Card>
-              <Card className="px-4 py-2">
+              <Card className="px-5 py-4 flex-1 sm:flex-none min-w-[140px] hover:scale-105 transition-transform duration-200">
                 <CardContent className="p-0">
-                  <div className="text-sm text-gray-600">Leaves count</div>
-                  <div className="text-xl font-bold">{summary.leaveDays}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Leaves count</div>
+                  <div className="text-2xl font-heading font-bold text-accent">{summary.leaveDays}</div>
                 </CardContent>
               </Card>
-              <Card className="px-4 py-2">
+              <Card className="px-5 py-4 flex-1 sm:flex-none min-w-[140px] hover:scale-105 transition-transform duration-200">
                 <CardContent className="p-0">
-                  <div className="text-sm text-gray-600">Total working days</div>
-                  <div className="text-xl font-bold">{summary.totalWorkingDays}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Total working days</div>
+                  <div className="text-2xl font-heading font-bold text-secondary">{summary.totalWorkingDays}</div>
                 </CardContent>
               </Card>
             </div>
-          </div>
+            </div>
+          </ScrollAnimate>
 
           {/* Current Date Display */}
-          <div className="mb-4 text-center">
-            <p className="text-lg font-semibold">{displayDate}</p>
-          </div>
+          <ScrollAnimate animation="fade-in" delay={200}>
+            <div className="mb-6 text-center">
+              <p className="text-xl font-heading font-semibold text-foreground">{displayDate}</p>
+            </div>
+          </ScrollAnimate>
         </div>
 
         {/* Attendance Table */}
-        <Card>
+        <ScrollAnimate animation="fade-in" delay={300}>
+          <Card>
           <CardContent className="pt-6">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-semibold">Date</th>
-                    <th className="text-left py-3 px-4 font-semibold">Check In</th>
-                    <th className="text-left py-3 px-4 font-semibold">Check Out</th>
-                    <th className="text-left py-3 px-4 font-semibold">Work Hours</th>
-                    <th className="text-left py-3 px-4 font-semibold">Extra hours</th>
+                  <tr className="border-b-2 border-border">
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Date</th>
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Check In</th>
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Check Out</th>
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Work Hours</th>
+                    <th className="text-left py-4 px-4 sm:px-6 font-heading font-semibold text-sm">Extra hours</th>
                   </tr>
                 </thead>
                 <tbody>
                   {attendance.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center py-8 text-gray-500">
+                      <td colSpan={5} className="text-center py-12 text-muted-foreground">
                         No attendance records found for this month
                       </td>
                     </tr>
                   ) : (
                     attendance.map((record, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4">
+                      <tr 
+                        key={index} 
+                        className="border-b border-border/50 hover:bg-primary/5 transition-colors duration-200"
+                        style={{ animationDelay: `${index * 0.03}s` }}
+                      >
+                        <td className="py-4 px-4 sm:px-6 font-medium">
                           {new Date(record.date).toLocaleDateString('en-GB', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric'
                           })}
                         </td>
-                        <td className="py-3 px-4">{record.checkIn || '-'}</td>
-                        <td className="py-3 px-4">{record.checkOut || '-'}</td>
-                        <td className="py-3 px-4">{record.workHours || '00:00'}</td>
-                        <td className="py-3 px-4">{record.extraHours || '00:00'}</td>
+                        <td className="py-4 px-4 sm:px-6 font-mono text-sm">{record.checkIn || '-'}</td>
+                        <td className="py-4 px-4 sm:px-6 font-mono text-sm">{record.checkOut || '-'}</td>
+                        <td className="py-4 px-4 sm:px-6 font-mono text-sm font-semibold text-primary">{record.workHours || '00:00'}</td>
+                        <td className="py-4 px-4 sm:px-6 font-mono text-sm font-semibold text-accent">{record.extraHours || '00:00'}</td>
                       </tr>
                     ))
                   )}
@@ -247,7 +263,8 @@ export default function EmployeeAttendancePage() {
               </table>
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </ScrollAnimate>
       </div>
     </div>
   );

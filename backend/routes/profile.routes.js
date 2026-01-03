@@ -190,7 +190,7 @@ router.put('/:id', async (req, res) => {
  * PUT /api/profile/:id/salary
  * Update salary (Admin only)
  */
-router.put('/:id/salary', authorize('admin'), async (req, res) => {
+router.put('/:id/salary', authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const profileId = req.params.id;
     const { monthlyWage, yearlyWage, workingDaysPerWeek, breakTimeHours, components, providentFund, professionalTax } = req.body;

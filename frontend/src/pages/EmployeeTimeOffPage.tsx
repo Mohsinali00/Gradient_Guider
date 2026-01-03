@@ -7,6 +7,7 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Label from '../components/ui/Label';
 import ProfileDropdown from '../components/ProfileDropdown';
+import Loader from '../components/Loader';
 
 interface LeaveRequest {
   id: string;
@@ -32,7 +33,7 @@ interface LeaveAllocation {
 
 export default function EmployeeTimeOffPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, company, logout } = useAuth();
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [allocation, setAllocation] = useState<LeaveAllocation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,11 +145,7 @@ export default function EmployeeTimeOffPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   return (
@@ -157,7 +154,16 @@ export default function EmployeeTimeOffPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-primary">DayFlow HRMS</h1>
+              <div className="flex items-center gap-3">
+                {company?.logo && (
+                  <img
+                    src={company.logo}
+                    alt={company.name}
+                    className="w-10 h-10 rounded-lg object-cover border-2 border-primary/30 shadow-md"
+                  />
+                )}
+                <h1 className="text-xl font-bold text-primary">DayFlow HRMS</h1>
+              </div>
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => navigate('/employees')}

@@ -2,7 +2,8 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import Company from '../models/Company.model.js';
 import User from '../models/User.model.js';
-import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js';
+import Admin from '../models/Admin.model.js';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { adminSignupSchema, loginSchema, changePasswordSchema } from '../validators/auth.validator.js';
 
@@ -35,35 +36,44 @@ router.post('/admin/signup', async (req, res) => {
     }
     
   
+    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    
+    // Create Company first (without superAdminId initially)
     const company = new Company({
       name: validatedData.companyName,
-      code: companyCode
+      code: companyCode,
+      logo: validatedData.logo || '',
+      superAdminId: null // Will be set after super admin creation
     });
     await company.save();
     
-
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-    
-    const admin = new User({
+    // Create Super Admin (Company Owner) with companyId
+    const superAdmin = new User({
       companyId: company._id,
-      role: 'admin',
+      role: 'super_admin',
       email: validatedData.email,
       phone: validatedData.phone,
-      firstName: 'Admin',
-      lastName: 'User',
+      firstName: 'Super',
+      lastName: 'Admin',
       yearOfJoining: new Date().getFullYear(),
       password: hashedPassword,
       forcePasswordReset: false,
-      isActive: true
+      isActive: true,
+      createdBy: null // Super admin has no creator
     });
-    await admin.save();
+    await superAdmin.save();
+    
+    // Update company with Super Admin reference
+    company.superAdminId = superAdmin._id;
+    await company.save();
     
     
     const tokenPayload = {
-      userId: admin._id.toString(),
+      userId: superAdmin._id.toString(),
       companyId: company._id.toString(),
-      role: admin.role,
-      email: admin.email
+      role: superAdmin.role,
+      email: superAdmin.email,
+      loginId: superAdmin.loginId
     };
     
     const accessToken = generateAccessToken(tokenPayload);
@@ -71,18 +81,21 @@ router.post('/admin/signup', async (req, res) => {
     
     res.status(201).json({
       success: true,
-      message: 'Admin account created successfully',
+      message: 'Company and Super Admin account created successfully',
       data: {
         user: {
-          id: admin._id,
-          email: admin.email,
-          role: admin.role,
-          companyId: company._id
+          id: superAdmin._id,
+          email: superAdmin.email,
+          role: superAdmin.role,
+          companyId: company._id,
+          firstName: superAdmin.firstName,
+          lastName: superAdmin.lastName
         },
         company: {
           id: company._id,
           name: company.name,
-          code: company.code
+          code: company.code,
+          logo: company.logo
         },
         tokens: {
           accessToken,
@@ -179,7 +192,8 @@ router.post('/login', async (req, res) => {
         company: {
           id: user.companyId._id,
           name: user.companyId.name,
-          code: user.companyId.code
+          code: user.companyId.code,
+          logo: user.companyId.logo || ''
         },
         tokens: {
           accessToken,
@@ -204,6 +218,56 @@ router.post('/login', async (req, res) => {
   }
 });
 
+
+/**
+ * POST /api/auth/refresh
+ * Refresh access token using refresh token
+ */
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
+    }
+
+    const decoded = verifyRefreshToken(refreshToken);
+
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token'
+      });
+    }
+
+    // Generate new access token
+    const tokenPayload = {
+      userId: decoded.userId,
+      companyId: decoded.companyId,
+      role: decoded.role,
+      email: decoded.email,
+      loginId: decoded.loginId
+    };
+
+    const newAccessToken = generateAccessToken(tokenPayload);
+
+    res.json({
+      success: true,
+      data: {
+        accessToken: newAccessToken
+      }
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
 
 router.post('/change-password', authenticate, async (req, res) => {
   try {

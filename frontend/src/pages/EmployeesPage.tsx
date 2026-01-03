@@ -8,6 +8,8 @@ import EmployeeCard from '../components/EmployeeCard';
 import AttendanceModal from '../components/AttendanceModal';
 import ProfileDropdown from '../components/ProfileDropdown';
 import Button from '../components/ui/Button';
+import Loader from '../components/Loader';
+import ScrollAnimate from '../components/ScrollAnimate';
 
 interface Employee {
   id: string;
@@ -27,7 +29,7 @@ interface Employee {
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, company, logout } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,81 +82,89 @@ export default function EmployeesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Loading employees...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative">
+      {/* Animated background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5 -z-10"></div>
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.08),transparent_50%)] -z-10"></div>
+      
       {/* Top Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <nav className="glass-effect border-b border-border/50 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-primary">DayFlow HRMS</h1>
-              <div className="flex items-center space-x-4">
-                <div className="flex space-x-4">
-                      <button
-                        onClick={() => navigate('/employees')}
-                        className="text-primary font-medium border-b-2 border-primary pb-1"
-                      >
-                        Employees
-                      </button>
-                      <button
-                        onClick={() => navigate('/attendance')}
-                        className="text-gray-600 hover:text-primary transition-colors"
-                      >
-                        Attendance
-                      </button>
-                      <button
-                        onClick={() => navigate('/time-off')}
-                        className="text-gray-600 hover:text-primary transition-colors"
-                      >
-                        Time Off
-                      </button>
-                  {user?.role === 'admin' && (
-                    <button
-                      onClick={() => navigate('/welcome')}
-                      className="text-gray-600 hover:text-primary transition-colors"
-                    >
-                      Manage Employees
-                    </button>
-                  )}
-                </div>
-                {user?.role === 'employee' && (
-                  <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-300">
-                    <Button
-                      onClick={() => setShowAttendanceModal(true)}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Check In / Out
-                    </Button>
-                  </div>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4">
+            <div className="flex items-center space-x-6 w-full sm:w-auto">
+              <div className="flex items-center gap-3">
+                {company?.logo && (
+                  <img
+                    src={company.logo}
+                    alt={company.name}
+                    className="w-10 h-10 rounded-lg object-cover border-2 border-primary/30 shadow-md"
+                  />
+                )}
+                <h1 className="text-2xl font-heading font-bold text-gradient">DayFlow HRMS</h1>
+              </div>
+              <div className="flex items-center space-x-1 sm:space-x-3 flex-wrap gap-2">
+                <button
+                  onClick={() => navigate('/employees')}
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 bg-primary/10 text-primary border-b-2 border-primary cursor-pointer"
+                >
+                  Employees
+                </button>
+                <button
+                  onClick={() => navigate('/attendance')}
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
+                >
+                  Attendance
+                </button>
+                <button
+                  onClick={() => navigate('/time-off')}
+                  className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
+                >
+                  Time Off
+                </button>
+                {user?.role === 'admin' && (
+                  <button
+                    onClick={() => navigate('/welcome')}
+                    className="px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
+                  >
+                    Manage Employees
+                  </button>
                 )}
               </div>
             </div>
-            <div className="relative">
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center space-x-2 focus:outline-none"
-              >
-                <img
-                  src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.firstName || '') + ' ' + (user?.lastName || ''))}&background=random`}
-                  alt="Profile"
-                  className="w-8 h-8 rounded-full border-2 border-gray-300"
-                />
-              </button>
-              {showProfileDropdown && (
-                <ProfileDropdown
-                  onClose={() => setShowProfileDropdown(false)}
-                  onProfileClick={() => navigate('/profile')}
-                  onLogout={logout}
-                />
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              {user?.role === 'employee' && (
+                <Button
+                  onClick={() => setShowAttendanceModal(true)}
+                  size="sm"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  Check In / Out
+                </Button>
               )}
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="flex items-center space-x-2 focus:outline-none rounded-full hover:ring-2 ring-primary/20 transition-all duration-200 p-1"
+                >
+                  <img
+                    src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.firstName || '') + ' ' + (user?.lastName || ''))}&background=random`}
+                    alt="Profile"
+                    className="w-9 h-9 rounded-full border-2 border-primary/30 shadow-md hover:shadow-lg transition-all duration-200"
+                  />
+                </button>
+                {showProfileDropdown && (
+                  <ProfileDropdown
+                    onClose={() => setShowProfileDropdown(false)}
+                    onProfileClick={() => navigate('/profile')}
+                    onLogout={logout}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -162,44 +172,54 @@ export default function EmployeesPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Add Employee Button and Search Bar */}
-        <div className="mb-6 flex items-center gap-4">
-          {user?.role === 'admin' && (
-            <Button
-              onClick={() => navigate('/welcome')}
-              size="sm"
-              variant="outline"
-            >
-              New
-            </Button>
-          )}
-          <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="Search employees by name, email, or department..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
+        <ScrollAnimate animation="fade-in" delay={0}>
+          <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+            {user?.role === 'admin' && (
+              <Button
+                onClick={() => navigate('/welcome')}
+                size="sm"
+                className="whitespace-nowrap"
+              >
+                New
+              </Button>
+            )}
+            <div className="flex-1">
+              <Input
+                type="text"
+                placeholder="Search employees by name, email, or department..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
           </div>
-        </div>
+        </ScrollAnimate>
 
         {/* Employee Cards Grid */}
         {filteredEmployees.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-gray-500">
-                {searchQuery ? 'No employees found matching your search.' : 'No employees found.'}
-              </p>
-            </CardContent>
-          </Card>
+          <ScrollAnimate animation="fade-in">
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">
+                  {searchQuery ? 'No employees found matching your search.' : 'No employees found.'}
+                </p>
+              </CardContent>
+            </Card>
+          </ScrollAnimate>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredEmployees.map((employee) => (
-              <EmployeeCard
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {filteredEmployees.map((employee, index) => (
+              <ScrollAnimate
                 key={employee.id}
-                employee={employee}
-                onClick={() => handleEmployeeClick(employee.id)}
-              />
+                animation="scale"
+                delay={index * 50}
+                threshold={0.1}
+              >
+                <EmployeeCard
+                  employee={employee}
+                  onClick={() => handleEmployeeClick(employee.id)}
+                />
+              </ScrollAnimate>
             ))}
           </div>
         )}

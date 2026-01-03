@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import Loader from '../components/Loader';
+import BackButton from '../components/BackButton';
 
 interface EmployeeDetails {
   id: string;
@@ -45,11 +47,7 @@ export default function EmployeeInfoPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Loading employee details...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   if (!employee) {
@@ -58,9 +56,10 @@ export default function EmployeeInfoPage() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <p className="text-center text-gray-500">Employee not found</p>
-            <Button onClick={() => navigate('/employees')} className="w-full mt-4">
-              Back to Employees
-            </Button>
+            <div className="flex items-center gap-3 mt-4">
+              <BackButton to="/employees" />
+              <span className="text-sm text-muted-foreground">Back to Employees</span>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -71,9 +70,10 @@ export default function EmployeeInfoPage() {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <Button onClick={() => navigate('/employees')} variant="outline">
-            ← Back to Employees
-          </Button>
+          <div className="flex items-center gap-3">
+            <BackButton to="/employees" />
+            <span className="text-sm text-muted-foreground">Back to Employees</span>
+          </div>
         </div>
 
         <Card>

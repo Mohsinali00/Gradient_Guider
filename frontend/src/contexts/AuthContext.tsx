@@ -16,6 +16,7 @@ interface Company {
   id: string;
   name: string;
   code: string;
+  logo?: string;
 }
 
 interface AuthContextType {
@@ -35,6 +36,7 @@ interface SignupData {
   phone?: string;
   password: string;
   confirmPassword: string;
+  logo?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,6 +46,114 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [company, setCompany] = useState<Company | null>(null);
   const [tokens, setTokens] = useState<{ accessToken: string; refreshToken: string } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const logout = () => {
+    setUser(null);
+    setCompany(null);
+    setTokens(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('company');
+    localStorage.removeItem('tokens');
+    delete axios.defaults.headers.common['Authorization'];
+    window.location.href = '/login';
+  };
+
+  const refreshAccessToken = async (refreshToken: string): Promise<string | null> => {
+    try {
+      const response = await axios.post('/api/auth/refresh', { refreshToken });
+      return response.data.data.accessToken;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  // Setup axios interceptor for token refresh
+  useEffect(() => {
+    let refreshing = false;
+
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const storedTokens = localStorage.getItem('tokens');
+        if (storedTokens) {
+          const tokens = JSON.parse(storedTokens);
+          config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        // Skip refresh for login/signup/refresh endpoints
+        if (originalRequest?.url?.includes('/api/auth/login') || 
+            originalRequest?.url?.includes('/api/auth/admin/signup') ||
+            originalRequest?.url?.includes('/api/auth/refresh')) {
+          return Promise.reject(error);
+        }
+
+        // If error is 401 and we haven't already tried to refresh
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+
+          // Don't try to refresh if we're already refreshing
+          if (refreshing) {
+            return Promise.reject(error);
+          }
+
+          const storedTokens = localStorage.getItem('tokens');
+          if (!storedTokens) {
+            logout();
+            return Promise.reject(error);
+          }
+
+          const tokens = JSON.parse(storedTokens);
+          refreshing = true;
+
+          try {
+            const newAccessToken = await refreshAccessToken(tokens.refreshToken);
+
+            if (newAccessToken) {
+              // Update tokens
+              const updatedTokens = {
+                ...tokens,
+                accessToken: newAccessToken
+              };
+              localStorage.setItem('tokens', JSON.stringify(updatedTokens));
+              setTokens(updatedTokens);
+              axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+              
+              // Retry original request with new token
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+              refreshing = false;
+              return axios(originalRequest);
+            } else {
+              // Refresh failed, logout
+              refreshing = false;
+              logout();
+              return Promise.reject(error);
+            }
+          } catch (refreshError) {
+            refreshing = false;
+            logout();
+            return Promise.reject(refreshError);
+          }
+        }
+
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
 
   
   useEffect(() => {
@@ -56,7 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCompany(JSON.parse(storedCompany));
       setTokens(JSON.parse(storedTokens));
       
-    
       axios.defaults.headers.common['Authorization'] = `Bearer ${JSON.parse(storedTokens).accessToken}`;
     }
     setLoading(false);
@@ -105,15 +214,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setCompany(null);
-    setTokens(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('company');
-    localStorage.removeItem('tokens');
-    delete axios.defaults.headers.common['Authorization'];
-  };
 
   const changePassword = async (currentPassword: string, newPassword: string, confirmPassword: string) => {
     try {

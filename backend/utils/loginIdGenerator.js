@@ -10,7 +10,8 @@ import SerialCounter from '../models/SerialCounter.model.js';
  */
 export async function generateLoginId(companyCode, firstName, lastName, yearOfJoining, companyId) {
   
-  const companyPrefix = 'OI';
+  // Use company code (first two letters of company name) instead of hardcoded "OI"
+  const companyPrefix = companyCode.toUpperCase();
   
 
   const firstNamePrefix = firstName.substring(0, 2).toUpperCase();

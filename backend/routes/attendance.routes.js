@@ -297,7 +297,7 @@ router.get('/employee/:month', async (req, res) => {
  * Get all employees' attendance for a specific date (Admin only)
  * date format: YYYY-MM-DD
  */
-router.get('/admin/:date', authorize('admin'), async (req, res) => {
+router.get('/admin/:date', authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { date } = req.params; // YYYY-MM-DD format
     const searchQuery = req.query.search || '';

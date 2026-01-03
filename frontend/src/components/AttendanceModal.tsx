@@ -73,11 +73,11 @@ export default function AttendanceModal({ isOpen, onClose, onCheckInOut }: Atten
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity animate-fade-in p-4"
       onClick={onClose}
     >
       <Card 
-        className="w-full max-w-md mx-4"
+        className="w-full max-w-md mx-4 animate-scale-in glass-effect"
         onClick={(e) => e.stopPropagation()}
       >
         <CardHeader>

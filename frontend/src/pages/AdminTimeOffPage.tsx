@@ -6,6 +6,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import ProfileDropdown from '../components/ProfileDropdown';
+import Loader from '../components/Loader';
 
 interface LeaveRequest {
   id: string;
@@ -34,7 +35,7 @@ interface LeaveRequest {
 
 export default function AdminTimeOffPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, company, logout } = useAuth();
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -143,11 +144,7 @@ export default function AdminTimeOffPage() {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   return (
@@ -156,7 +153,16 @@ export default function AdminTimeOffPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-primary">DayFlow HRMS</h1>
+              <div className="flex items-center gap-3">
+                {company?.logo && (
+                  <img
+                    src={company.logo}
+                    alt={company.name}
+                    className="w-10 h-10 rounded-lg object-cover border-2 border-primary/30 shadow-md"
+                  />
+                )}
+                <h1 className="text-xl font-bold text-primary">DayFlow HRMS</h1>
+              </div>
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => navigate('/employees')}
@@ -271,7 +277,9 @@ export default function AdminTimeOffPage() {
                             />
                             <div>
                               <div className="font-medium">{leave.employee.name}</div>
-                              <div className="text-sm text-gray-500">{leave.employee.department || 'N/A'}</div>
+                              {leave.employee.department?.trim() && (
+                                <div className="text-sm text-muted-foreground">{leave.employee.department.trim()}</div>
+                              )}
                             </div>
                           </div>
                         </td>

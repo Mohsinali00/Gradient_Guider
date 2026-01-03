@@ -178,7 +178,7 @@ router.get('/employee', async (req, res) => {
  * GET /api/leave/admin
  * Get all leave requests (Admin/HR only)
  */
-router.get('/admin', authorize('admin'), async (req, res) => {
+router.get('/admin', authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { status, search } = req.query;
 
@@ -252,7 +252,7 @@ router.get('/admin', authorize('admin'), async (req, res) => {
  * PUT /api/leave/:id/approve
  * Approve leave request (Admin/HR only)
  */
-router.put('/:id/approve', authorize('admin'), async (req, res) => {
+router.put('/:id/approve', authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { adminComment } = req.body;
@@ -322,7 +322,7 @@ router.put('/:id/approve', authorize('admin'), async (req, res) => {
  * PUT /api/leave/:id/reject
  * Reject leave request (Admin/HR only)
  */
-router.put('/:id/reject', authorize('admin'), async (req, res) => {
+router.put('/:id/reject', authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { adminComment } = req.body;
@@ -378,7 +378,7 @@ router.put('/:id/reject', authorize('admin'), async (req, res) => {
  * GET /api/leave/allocation/:employeeId
  * Get leave allocation for an employee (Admin only)
  */
-router.get('/allocation/:employeeId', authorize('admin'), async (req, res) => {
+router.get('/allocation/:employeeId', authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { employeeId } = req.params;
 

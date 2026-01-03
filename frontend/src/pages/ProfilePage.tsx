@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Label from '../components/ui/Label';
+import Loader from '../components/Loader';
+import BackButton from '../components/BackButton';
 
 interface ProfileData {
   id: string;
@@ -53,7 +55,6 @@ interface SalaryData {
 }
 
 export default function ProfilePage() {
-  const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('resume');
@@ -150,11 +151,7 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Loading profile...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   if (!profile) {
@@ -163,9 +160,10 @@ export default function ProfilePage() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <p className="text-center text-gray-500">Profile not found</p>
-            <Button onClick={() => navigate('/employees')} className="w-full mt-4">
-              Back to Employees
-            </Button>
+            <div className="flex items-center gap-3 mt-4">
+              <BackButton to="/employees" />
+              <span className="text-sm text-muted-foreground">Back to Employees</span>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -184,9 +182,10 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
-          <Button onClick={() => navigate('/employees')} variant="outline">
-            ← Back to Employees
-          </Button>
+          <div className="flex items-center gap-3">
+            <BackButton to="/employees" />
+            <span className="text-sm text-muted-foreground">Back to Employees</span>
+          </div>
           {profileId !== currentUser?.id && (
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-600">
@@ -434,7 +433,7 @@ export default function ProfilePage() {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer transition-all duration-200 ${
                       activeTab === tab
                         ? 'border-primary text-primary'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
