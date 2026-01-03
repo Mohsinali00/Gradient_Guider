@@ -65,6 +65,14 @@ export const createEmployeeSchema = z.object({
     .min(10, 'Phone number must be at least 10 digits')
     .max(15, 'Phone number must be less than 15 digits')
     .optional(),
+  department: z.string()
+    .max(100, 'Department must be less than 100 characters')
+    .trim()
+    .optional(),
+  designation: z.string()
+    .max(100, 'Designation must be less than 100 characters')
+    .trim()
+    .optional(),
   yearOfJoining: z.number()
     .int('Year must be an integer')
     .min(2000, 'Year must be after 2000')

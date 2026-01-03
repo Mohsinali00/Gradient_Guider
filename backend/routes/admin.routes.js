@@ -66,6 +66,8 @@ router.post('/employees', async (req, res) => {
       phone: validatedData.phone,
       firstName: validatedData.firstName,
       lastName: validatedData.lastName,
+      department: validatedData.department,
+      designation: validatedData.designation,
       yearOfJoining,
       password: hashedPassword,
       forcePasswordReset: true, 

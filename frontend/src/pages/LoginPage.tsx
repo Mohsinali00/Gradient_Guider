@@ -42,7 +42,7 @@ export default function LoginPage() {
     if (user?.forcePasswordReset) {
       setShowPasswordReset(true);
     } else if (user && !user.forcePasswordReset) {
-      navigate('/welcome');
+      navigate('/employees');
     }
   }, [user, navigate]);
 
@@ -75,7 +75,7 @@ export default function LoginPage() {
         passwordResetData.confirmPassword
       );
       setShowPasswordReset(false);
-      navigate('/welcome');
+      navigate('/employees');
     } catch (err: any) {
       setPasswordResetError(err.message || 'Password change failed');
     }

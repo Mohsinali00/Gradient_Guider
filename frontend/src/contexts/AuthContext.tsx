@@ -8,6 +8,7 @@ interface User {
   role: 'admin' | 'employee';
   firstName?: string;
   lastName?: string;
+  avatar?: string;
   forcePasswordReset?: boolean;
 }
 

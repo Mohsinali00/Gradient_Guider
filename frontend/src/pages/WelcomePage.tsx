@@ -22,6 +22,8 @@ interface CreateEmployeeData {
   lastName: string;
   email?: string;
   phone?: string;
+  department?: string;
+  designation?: string;
   yearOfJoining: number;
 }
 
@@ -41,6 +43,8 @@ export default function WelcomePage() {
     lastName: '',
     email: '',
     phone: '',
+    department: '',
+    designation: '',
     yearOfJoining: new Date().getFullYear(),
   });
 
@@ -75,6 +79,8 @@ export default function WelcomePage() {
         lastName: '',
         email: '',
         phone: '',
+        department: '',
+        designation: '',
         yearOfJoining: new Date().getFullYear(),
       });
       setShowCreateForm(false);
@@ -282,6 +288,32 @@ export default function WelcomePage() {
                       value={formData.phone}
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department (Optional)</Label>
+                    <Input
+                      id="department"
+                      type="text"
+                      value={formData.department}
+                      onChange={(e) =>
+                        setFormData({ ...formData, department: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="designation">Designation (Optional)</Label>
+                    <Input
+                      id="designation"
+                      type="text"
+                      value={formData.designation}
+                      onChange={(e) =>
+                        setFormData({ ...formData, designation: e.target.value })
                       }
                     />
                   </div>
