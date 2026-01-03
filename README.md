@@ -2,7 +2,7 @@
 Dayflow - Human Resource Management System (Odoo Hackathon Virtual round)
 ## ✅ Commit 1: Login & Signup Module
 
-preview :- https://dayFlow1.onrender.com
+preview :- https://dayflow1.onrender.com
 
 ---
 
